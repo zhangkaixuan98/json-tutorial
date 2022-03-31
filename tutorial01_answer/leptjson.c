@@ -52,6 +52,7 @@ static int lept_parse_value(lept_context* c, lept_value* v) {
     }
 }
 
+/* answer's alter */
 int lept_parse(lept_value* v, const char* json) {
     lept_context c;
     int ret;
@@ -59,6 +60,7 @@ int lept_parse(lept_value* v, const char* json) {
     c.json = json;
     v->type = LEPT_NULL;
     lept_parse_whitespace(&c);
+    /* 解析完value后，再解析一个whitespace */
     if ((ret = lept_parse_value(&c, v)) == LEPT_PARSE_OK) {
         lept_parse_whitespace(&c);
         if (*c.json != '\0')

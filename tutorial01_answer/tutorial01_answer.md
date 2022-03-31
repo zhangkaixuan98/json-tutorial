@@ -19,7 +19,7 @@ EXPECT_EQ_INT(LEPT_PARSE_ROOT_NOT_SINGULAR, lept_parse(&v, "null x"));
 JSON-text = ws value ws
 ~~~
 
-但原来的 `lept_parse()` 只处理了前两部分。我们只需要加入第三部分，解析空白，然后检查 JSON 文本是否完结：
+但原来的 `lept_parse()` 只处理了前两部分。我们只**需要加入第三部分，解析空白，然后检查 JSON 文本是否完结**：
 
 ~~~c
 int lept_parse(lept_value* v, const char* json) {
@@ -29,6 +29,7 @@ int lept_parse(lept_value* v, const char* json) {
     c.json = json;
     v->type = LEPT_NULL;
     lept_parse_whitespace(&c);
+    /* new alter */
     if ((ret = lept_parse_value(&c, v)) == LEPT_PARSE_OK) {
         lept_parse_whitespace(&c);
         if (*c.json != '\0')
@@ -69,7 +70,7 @@ static void test_parse() {
 }
 ~~~
 
-但要记得在上一级的测试函数 `test_parse()` 调用这函数，否则会不起作用。还好如果我们记得用 `static` 修饰这两个函数，编译器会发出警告：
+但要记得在上一级的测试函数 `test_parse()` 调用这函数，否则会不起作用。**还好如果我们记得用 `static` 修饰这两个函数，编译器会发出警告：(确实)**
 
 ~~~
 test.c:30:13: warning: unused function 'test_parse_true' [-Wunused-function]
@@ -77,7 +78,7 @@ static void test_parse_true() {
             ^
 ~~~
 
-因为 static 函数的意思是指，该函数只作用于编译单元中，那么没有被调用时，编译器是能发现的。
+**因为 static 函数的意思是指，该函数只作用于编译单元中，那么没有被调用时，编译器是能发现的。**
 
 ### 3. true/false 解析
 
@@ -113,7 +114,7 @@ static int lept_parse_value(lept_context* c, lept_value* v) {
 }
 ~~~
 
-其实这 3 种类型都是解析字面量，可以使用单一个函数实现，例如用这种方式调用：
+**其实这 3 种类型都是解析字面量，可以使用单一个函数实现，例如用这种方式调用：(确实)**
 
 ~~~c
         case 'n': return lept_parse_literal(c, v, "null", LEPT_NULL);
