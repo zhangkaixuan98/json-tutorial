@@ -153,6 +153,8 @@ static void test_parse_invalid_value() {
 
 我们需要把十进制的数字转换成二进制的 `double`。这并不是容易的事情 [2]。为了简单起见，leptjson 将使用标准库的 [`strtod()`](https://en.cppreference.com/w/c/string/byte/strtof) 来进行转换。`strtod()` 可转换 JSON 所要求的格式，但问题是，一些 JSON 不容许的格式，`strtod()` 也可转换，所以我们需要自行做格式校验。
 
+`strtod()` 也可转换".number
+
 ~~~c
 #include <stdlib.h>  /* NULL, strtod() */
 

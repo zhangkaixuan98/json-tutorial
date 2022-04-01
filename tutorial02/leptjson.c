@@ -8,6 +8,8 @@ typedef struct {
     const char* json;
 }lept_context;
 
+typedef enum {true = 1,false = 0} bool;
+
 static void lept_parse_whitespace(lept_context* c) {
     const char *p = c->json;
     while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r')
@@ -15,36 +17,73 @@ static void lept_parse_whitespace(lept_context* c) {
     c->json = p;
 }
 
-static int lept_parse_true(lept_context* c, lept_value* v) {
-    EXPECT(c, 't');
-    if (c->json[0] != 'r' || c->json[1] != 'u' || c->json[2] != 'e')
-        return LEPT_PARSE_INVALID_VALUE;
-    c->json += 3;
-    v->type = LEPT_TRUE;
+static int lept_parse_literal(lept_context* c, const char* literal) {
+    EXPECT(c, *literal);
+    const char *p = c->json;
+    while (*++literal != '\0') {
+        if (*p++ != *literal) 
+            return LEPT_PARSE_INVALID_VALUE;
+    }
+    c->json = p;
     return LEPT_PARSE_OK;
+}
+
+static int lept_parse_true(lept_context* c, lept_value* v) {
+    int ret = lept_parse_literal(c, "true");
+    if (ret == LEPT_PARSE_OK)
+        v->type = LEPT_TRUE;
+    return ret;
 }
 
 static int lept_parse_false(lept_context* c, lept_value* v) {
-    EXPECT(c, 'f');
-    if (c->json[0] != 'a' || c->json[1] != 'l' || c->json[2] != 's' || c->json[3] != 'e')
-        return LEPT_PARSE_INVALID_VALUE;
-    c->json += 4;
-    v->type = LEPT_FALSE;
-    return LEPT_PARSE_OK;
+    int ret = lept_parse_literal(c, "false");
+    if (ret == LEPT_PARSE_OK)
+        v->type = LEPT_FALSE;
+    return ret;
 }
 
 static int lept_parse_null(lept_context* c, lept_value* v) {
-    EXPECT(c, 'n');
-    if (c->json[0] != 'u' || c->json[1] != 'l' || c->json[2] != 'l')
-        return LEPT_PARSE_INVALID_VALUE;
-    c->json += 3;
-    v->type = LEPT_NULL;
+    int ret = lept_parse_literal(c, "null");
+    if (ret == LEPT_PARSE_OK)
+        v->type = LEPT_NULL;
+    return ret;
+}
+
+static void number_loop(const char* p) {
+    while (*p >= '0' && *p <= '9') ++p;
+}
+
+static int json_validate_number(lept_context* c) {
+    const char* p = c->json;
+    if (*p == '-') ++p;
+    if (*p == '0') ++p;
+    else {
+        if (*p >= '1' && *p <= '9') {
+            number_loop(++p);
+        }
+        else return LEPT_PARSE_INVALID_VALUE;
+    }
+    if (*p == '.') {
+        ++p;
+        if (*p < '0' || *p > '9' )
+            return LEPT_PARSE_INVALID_VALUE;
+        number_loop(++p);
+    }
+    if (*p == 'e' || *p == 'E') {
+        ++p;
+        if (*p == '+' || *p == '-') ++p;
+        if (*p < '0' || *p > '9' )
+            return LEPT_PARSE_INVALID_VALUE;
+        number_loop(++p);
+    }
     return LEPT_PARSE_OK;
 }
 
 static int lept_parse_number(lept_context* c, lept_value* v) {
     char* end;
     /* \TODO validate number */
+    int ret = json_validate_number(c);
+    if (ret != LEPT_PARSE_OK) return ret;
     v->n = strtod(c->json, &end);
     if (c->json == end)
         return LEPT_PARSE_INVALID_VALUE;
