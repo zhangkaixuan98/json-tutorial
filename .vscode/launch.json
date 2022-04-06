@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "tutorial02",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/tutorial02/build/leptjson_test",
+      "environment": [{"name": "config", "value": "Debug"}],
+      "cwd": "${workspaceRoot}"
+    },
+    {
+      "name": "tutorial02_answer",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/tutorial02_answer/build/leptjson_test",
+      "environment": [{"name": "config", "value": "Debug"}],
+      "cwd": "${workspaceRoot}"
+    }
+  ]
+}

@@ -1,5 +1,7 @@
 #include "leptjson.h"
 #include <assert.h>  /* assert() */
+#include <errno.h>   /* errno, ERANGE */
+#include <math.h>    /* HUGE_VAL */
 #include <stdlib.h>  /* NULL, strtod() */
 
 #define EXPECT(c, ch)       do { assert(*c->json == (ch)); c->json++; } while(0)
@@ -49,17 +51,16 @@ static int lept_parse_null(lept_context* c, lept_value* v) {
     return ret;
 }
 
-static void number_loop(const char* p) {
-    while (*p >= '0' && *p <= '9') ++p;
-}
+static int lept_parse_number(lept_context* c, lept_value* v) {
+    char* end;
+    /* \TODO validate number */
 
-static int json_validate_number(lept_context* c) {
     const char* p = c->json;
     if (*p == '-') ++p;
     if (*p == '0') ++p;
     else {
         if (*p >= '1' && *p <= '9') {
-            number_loop(++p);
+            while (*p >= '0' && *p <= '9') ++p;
         }
         else return LEPT_PARSE_INVALID_VALUE;
     }
@@ -67,27 +68,22 @@ static int json_validate_number(lept_context* c) {
         ++p;
         if (*p < '0' || *p > '9' )
             return LEPT_PARSE_INVALID_VALUE;
-        number_loop(++p);
+        while (*p >= '0' && *p <= '9') ++p;
     }
     if (*p == 'e' || *p == 'E') {
         ++p;
         if (*p == '+' || *p == '-') ++p;
         if (*p < '0' || *p > '9' )
             return LEPT_PARSE_INVALID_VALUE;
-        number_loop(++p);
+        while (*p >= '0' && *p <= '9') ++p;
     }
-    return LEPT_PARSE_OK;
-}
-
-static int lept_parse_number(lept_context* c, lept_value* v) {
-    char* end;
-    /* \TODO validate number */
-    int ret = json_validate_number(c);
-    if (ret != LEPT_PARSE_OK) return ret;
-    v->n = strtod(c->json, &end);
-    if (c->json == end)
-        return LEPT_PARSE_INVALID_VALUE;
-    c->json = end;
+    
+    /* */
+    errno = 0;
+    v->n = strtod(c->json, NULL);
+    if (errno == ERANGE && (v->n == HUGE_VAL || v->n == -HUGE_VAL))
+        return LEPT_PARSE_NUMBER_TOO_BIG;
+    c->json = p;
     v->type = LEPT_NUMBER;
     return LEPT_PARSE_OK;
 }
@@ -109,7 +105,8 @@ int lept_parse(lept_value* v, const char* json) {
     c.json = json;
     v->type = LEPT_NULL;
     lept_parse_whitespace(&c);
-    if ((ret = lept_parse_value(&c, v)) == LEPT_PARSE_OK) {
+    ret = lept_parse_value(&c, v);
+    if (ret == LEPT_PARSE_OK) {
         lept_parse_whitespace(&c);
         if (*c.json != '\0') {
             v->type = LEPT_NULL;
